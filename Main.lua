@@ -1,12 +1,25 @@
--- ACR HUB V39 - CUSTOMIZABLE TEAM CHECK & TARGET FIX
+-- ACR HUB V39 - MODERN CUSTOMIZABLE TEAM CHECK & TARGET FIX
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
 
 local Player = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local Character, Root, Humanoid
+
+-- RENK TEMASI
+local Theme = {
+    Primary = Color3.fromRGB(220, 20, 60),    -- Kırmızı (Ana renk)
+    Secondary = Color3.fromRGB(30, 144, 255), -- Mavi (İkincil renk)
+    Dark = Color3.fromRGB(10, 10, 15),        -- Koyu arkaplan
+    Darker = Color3.fromRGB(5, 5, 10),        -- Daha koyu
+    Light = Color3.fromRGB(240, 240, 245),    -- Açık metin
+    Gray = Color3.fromRGB(40, 40, 50),        -- Gri alanlar
+    Success = Color3.fromRGB(0, 200, 0),      -- Yeşil (başarı)
+    Warning = Color3.fromRGB(255, 165, 0)     -- Turuncu (uyarı)
+}
 
 -- AUTO REFRESH CHARACTER
 local function UpdateCharacterVars(char)
@@ -25,567 +38,577 @@ end
 Player.CharacterAdded:Connect(UpdateCharacterVars)
 UpdateCharacterVars(Player.Character)
 
+-- GLOBAL DEĞİŞKENLER
 _G.BoostPower = _G.BoostPower or 45
-_G.TeamCheckActive = true -- Varsayılan olarak takım arkadaşlarına vurmaz
-_G.ClickTPDistance = 100 -- Varsayılan Click TP mesafesi
-local AccentColor = Color3.fromRGB(200, 0, 0)
+_G.TeamCheckActive = true
+_G.ClickTPDistance = 100
+_G.AimbotFOV = 100
+_G.ESPColorMode = "Team" -- "Team", "Health", "Distance"
 
+-- YENİ MODÜLLER İLE GÜNCELLENMİŞ CONFIG
 _G.CurrentConfig = {
     Combat = {
-        {Text = "Combat Lock", State = false, Key = Enum.KeyCode.G, Tag = "Aimbot", HasSettings = true},
-        {Text = "Super Knockback", State = false, Key = Enum.KeyCode.Y, Tag = "SuperKB"},
-        {Text = "Wall Hit", State = false, Key = Enum.KeyCode.L, Tag = "WallHit"},
-        {Text = "Baritone", State = false, Key = Enum.KeyCode.H, Tag = "Baritone"},
-        {Text = "Auto Clicker", State = false, Key = Enum.KeyCode.K, Tag = "AutoClicker"}
+        {Text = "🔫 Combat Lock", State = false, Key = Enum.KeyCode.G, Tag = "Aimbot", HasSettings = true, Icon = "🎯"},
+        {Text = "💥 Super Knockback", State = false, Key = Enum.KeyCode.Y, Tag = "SuperKB", Icon = "⚡"},
+        {Text = "🧱 Wall Hit", State = false, Key = Enum.KeyCode.L, Tag = "WallHit", Icon = "🔨"},
+        {Text = "🎵 Baritone", State = false, Key = Enum.KeyCode.H, Tag = "Baritone", Icon = "🎼"},
+        {Text = "🖱️ Auto Clicker", State = false, Key = Enum.KeyCode.K, Tag = "AutoClicker", Icon = "⚡", HasSettings = true},
+        {Text = "🎯 Silent Aim", State = false, Key = Enum.KeyCode.P, Tag = "SilentAim", Icon = "🎯"},
+        {Text = "🔫 Trigger Bot", State = false, Key = Enum.KeyCode.O, Tag = "TriggerBot", Icon = "🎯"}
     },
     Movement = {
-        {Text = "Speed Bypass", State = false, Key = Enum.KeyCode.Z, Tag = "Bypass", HasSettings = true},
-        {Text = "Inf Jump", State = false, Key = Enum.KeyCode.M, Tag = "InfJump"},
-        {Text = "No-Clip", State = false, Key = Enum.KeyCode.N, Tag = "NoClip"},
-        {Text = "Click TP", State = false, Key = Enum.KeyCode.I, Tag = "ClickTP", HasSettings = true}
+        {Text = "🚀 Speed Bypass", State = false, Key = Enum.KeyCode.Z, Tag = "Bypass", HasSettings = true, Icon = "⚡"},
+        {Text = "🔄 Inf Jump", State = false, Key = Enum.KeyCode.M, Tag = "InfJump", Icon = "⬆️"},
+        {Text = "👻 No-Clip", State = false, Key = Enum.KeyCode.N, Tag = "NoClip", Icon = "👻"},
+        {Text = "📍 Click TP", State = false, Key = Enum.KeyCode.I, Tag = "ClickTP", HasSettings = true, Icon = "📍"},
+        {Text = "🛡️ Fly", State = false, Key = Enum.KeyCode.J, Tag = "Fly", Icon = "🕊️"},
+        {Text = "🎯 AirStuck", State = false, Key = Enum.KeyCode.U, Tag = "AirStuck", Icon = "✈️"},
+        {Text = "📐 Spiderman", State = false, Key = Enum.KeyCode.RightAlt, Tag = "Spiderman", Icon = "🕷️"}
     },
     Player = {
-        {Text = "God Mode+", State = false, Key = Enum.KeyCode.T, Tag = "GodMode"},
-        {Text = "Anti-Aim", State = false, Key = Enum.KeyCode.F, Tag = "AntiAim"},
-        {Text = "Anti-KB", State = false, Key = Enum.KeyCode.V, Tag = "AntiKB"},
-        {Text = "Fake Lag", State = false, Key = Enum.KeyCode.X, Tag = "FakeLag"}
+        {Text = "👑 God Mode+", State = false, Key = Enum.KeyCode.T, Tag = "GodMode", Icon = "👑"},
+        {Text = "🌀 Anti-Aim", State = false, Key = Enum.KeyCode.F, Tag = "AntiAim", Icon = "🌀"},
+        {Text = "🛡️ Anti-KB", State = false, Key = Enum.KeyCode.V, Tag = "AntiKB", Icon = "🛡️"},
+        {Text = "📡 Fake Lag", State = false, Key = Enum.KeyCode.X, Tag = "FakeLag", HasSettings = true, Icon = "📡"},
+        {Text = "🔒 Anti-Grab", State = false, Key = Enum.KeyCode.B, Tag = "AntiGrab", Icon = "🔒"},
+        {Text = "👁️ X-Ray", State = false, Key = Enum.KeyCode.C, Tag = "XRay", Icon = "👁️"},
+        {Text = "💨 No Slow", State = false, Key = Enum.KeyCode.LeftAlt, Tag = "NoSlow", Icon = "💨"}
     },
-    Render = {
-        {Text = "Player ESP", State = false, Key = Enum.KeyCode.C, Tag = "ESP"},
-        {Text = "Tracers", State = false, Key = Enum.KeyCode.J, Tag = "Tracers"},
-        {Text = "Hand Glow", State = false, Key = Enum.KeyCode.U, Tag = "HandGlow"},
-        {Text = "X-Ray 50%", State = false, Key = Enum.KeyCode.B, Tag = "EmptyXRay"},
-        -- BLINK MODÜLÜ EKLENDİ
-        {Text = "Blink", State = false, Key = Enum.KeyCode.Q, Tag = "Blink", HasSettings = true}
+    Visuals = {
+        {Text = "👁️ Player ESP", State = false, Key = Enum.KeyCode.C, Tag = "ESP", HasSettings = true, Icon = "👁️"},
+        {Text = "📐 Tracers", State = false, Key = Enum.KeyCode.J, Tag = "Tracers", Icon = "📐"},
+        {Text = "✨ Hand Glow", State = false, Key = Enum.KeyCode.U, Tag = "HandGlow", Icon = "✨"},
+        {Text = "🎨 Chams", State = false, Key = Enum.KeyCode.B, Tag = "Chams", Icon = "🎨"},
+        {Text = "⚡ Blink", State = false, Key = Enum.KeyCode.Q, Tag = "Blink", HasSettings = true, Icon = "⚡"},
+        {Text = "🌈 Rainbow GUI", State = false, Key = Enum.KeyCode.R, Tag = "RainbowGUI", Icon = "🌈"},
+        {Text = "🎭 Fullbright", State = false, Key = Enum.KeyCode.F, Tag = "Fullbright", Icon = "💡"}
+    },
+    Utility = {
+        {Text = "📋 Server Info", State = false, Key = Enum.KeyCode.Insert, Tag = "ServerInfo", Icon = "📊"},
+        {Text = "🎮 Anti-AFK", State = false, Key = Enum.KeyCode.End, Tag = "AntiAFK", Icon = "⏰"},
+        {Text = "📸 Screenshot", State = false, Key = Enum.KeyCode.Print, Tag = "Screenshot", Icon = "📷"},
+        {Text = "🔍 Zoom", State = false, Key = Enum.KeyCode.Z, Tag = "Zoom", Icon = "🔍"},
+        {Text = "💾 Save Config", State = false, Key = Enum.KeyCode.F5, Tag = "SaveConfig", Icon = "💾"},
+        {Text = "📂 Load Config", State = false, Key = Enum.KeyCode.F6, Tag = "LoadConfig", Icon = "📂"}
     }
 }
 
--- GUI SETUP
+-- MODERN GUI SETUP
 local ScreenGui = Instance.new("ScreenGui", CoreGui)
-ScreenGui.Name = "ACR_HUB_V39"
+ScreenGui.Name = "ACR_HUB_V39_MODERN"
+ScreenGui.ResetOnSpawn = false
 
+-- ANA CONTAINER
 local MainContainer = Instance.new("Frame", ScreenGui)
-MainContainer.Size = UDim2.new(1, 0, 1, 0); MainContainer.BackgroundTransparency = 1
-local UIList = Instance.new("UIListLayout", MainContainer)
-UIList.FillDirection = Enum.FillDirection.Horizontal
-UIList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-UIList.VerticalAlignment = Enum.VerticalAlignment.Top
-UIList.Padding = UDim.new(0, 25)
+MainContainer.Size = UDim2.new(0, 900, 0, 500)
+MainContainer.Position = UDim2.new(0.5, -450, 0.5, -250)
+MainContainer.BackgroundColor3 = Theme.Dark
+MainContainer.BorderSizePixel = 0
+MainContainer.ClipsDescendants = true
 
-local SpeedDisplayLabel
-local BlinkPower = 100 -- Varsayılan Blink gücü
-local BlinkEffectEnabled = true -- Blink efektleri aktif
+-- KÖŞE YUVARLAKLIĞI
+local UICorner = Instance.new("UICorner", MainContainer)
+UICorner.CornerRadius = UDim.new(0, 12)
 
--- CLICK TP VISUALIZATION (GÜVENLİ VERSİYON)
-_G.ClickTPIndicator = nil
-local function SafeSetIndicatorVisibility(state)
-    if _G.ClickTPIndicator and _G.ClickTPIndicator.Parent then
-        pcall(function()
-            _G.ClickTPIndicator.Visible = state
-        end)
-    end
-end
+-- GÖLGE EFEKTİ
+local DropShadow = Instance.new("ImageLabel", MainContainer)
+DropShadow.Name = "DropShadow"
+DropShadow.BackgroundTransparency = 1
+DropShadow.Position = UDim2.new(0, -15, 0, -15)
+DropShadow.Size = UDim2.new(1, 30, 1, 30)
+DropShadow.Image = "rbxassetid://6015897843"
+DropShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+DropShadow.ImageTransparency = 0.5
+DropShadow.ScaleType = Enum.ScaleType.Slice
+DropShadow.SliceCenter = Rect.new(49, 49, 450, 450)
+DropShadow.ZIndex = -1
 
-local function SafeUpdateIndicatorPosition(position)
-    if _G.ClickTPIndicator and _G.ClickTPIndicator.Parent then
-        pcall(function()
-            _G.ClickTPIndicator.Position = position
-        end)
-    end
-end
+-- HEADER
+local Header = Instance.new("Frame", MainContainer)
+Header.Size = UDim2.new(1, 0, 0, 50)
+Header.BackgroundColor3 = Theme.Darker
+Header.BorderSizePixel = 0
 
-local function CreateTPIndicator()
-    -- Eski indicator'ı temizle
-    if _G.ClickTPIndicator and _G.ClickTPIndicator.Parent then
-        _G.ClickTPIndicator:Destroy()
-    end
+local HeaderCorner = Instance.new("UICorner", Header)
+HeaderCorner.CornerRadius = UDim.new(0, 12)
+
+local Title = Instance.new("TextLabel", Header)
+Title.Size = UDim2.new(1, -20, 1, 0)
+Title.Position = UDim2.new(0, 20, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "🔮 ACR HUB V39 | MODERN EDITION"
+Title.TextColor3 = Theme.Light
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 20
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+local Version = Instance.new("TextLabel", Header)
+Version.Size = UDim2.new(0, 100, 0, 20)
+Version.Position = UDim2.new(1, -120, 0, 15)
+Version.BackgroundTransparency = 1
+Version.Text = "v39.0.1"
+Version.TextColor3 = Theme.Secondary
+Version.Font = Enum.Font.GothamMedium
+Version.TextSize = 14
+
+-- STATUS BAR
+local StatusBar = Instance.new("Frame", Header)
+StatusBar.Size = UDim2.new(0, 200, 0, 4)
+StatusBar.Position = UDim2.new(0, 20, 1, -8)
+StatusBar.BackgroundColor3 = Theme.Gray
+StatusBar.BorderSizePixel = 0
+
+local StatusFill = Instance.new("Frame", StatusBar)
+StatusFill.Size = UDim2.new(0.75, 0, 1, 0)
+StatusFill.BackgroundColor3 = Theme.Primary
+StatusFill.BorderSizePixel = 0
+
+-- İÇERİK ALANI
+local Content = Instance.new("Frame", MainContainer)
+Content.Size = UDim2.new(1, -20, 1, -70)
+Content.Position = UDim2.new(0, 10, 0, 60)
+Content.BackgroundTransparency = 1
+
+-- TAB SİSTEMİ
+local Tabs = {"Combat", "Movement", "Player", "Visuals", "Utility"}
+local TabButtons = {}
+local TabFrames = {}
+
+local TabContainer = Instance.new("Frame", Content)
+TabContainer.Size = UDim2.new(0, 150, 1, 0)
+TabContainer.BackgroundTransparency = 1
+
+local ModulesContainer = Instance.new("Frame", Content)
+ModulesContainer.Size = UDim2.new(1, -160, 1, 0)
+ModulesContainer.Position = UDim2.new(0, 160, 0, 0)
+ModulesContainer.BackgroundTransparency = 1
+
+-- TAB BUTONLARI
+for i, tabName in ipairs(Tabs) do
+    local TabButton = Instance.new("TextButton", TabContainer)
+    TabButton.Size = UDim2.new(1, 0, 0, 40)
+    TabButton.Position = UDim2.new(0, 0, 0, (i-1)*45)
+    TabButton.BackgroundColor3 = Theme.Darker
+    TabButton.Text = "  " .. tabName
+    TabButton.TextColor3 = Theme.Light
+    TabButton.Font = Enum.Font.GothamMedium
+    TabButton.TextSize = 14
+    TabButton.TextXAlignment = Enum.TextXAlignment.Left
+    TabButton.BorderSizePixel = 0
     
-    -- Yeni indicator oluştur
-    _G.ClickTPIndicator = Instance.new("Part")
-    _G.ClickTPIndicator.Size = Vector3.new(2, 0.1, 2)
-    _G.ClickTPIndicator.Color = Color3.fromRGB(0, 255, 0)
-    _G.ClickTPIndicator.Anchored = true
-    _G.ClickTPIndicator.CanCollide = false
-    _G.ClickTPIndicator.Transparency = 0.5
-    _G.ClickTPIndicator.Name = "ACR_ClickTP_Indicator"
+    local TabCorner = Instance.new("UICorner", TabButton)
+    TabCorner.CornerRadius = UDim.new(0, 8)
     
-    -- Parent ayarla (önemli!)
-    _G.ClickTPIndicator.Parent = workspace
+    local TabIcon = Instance.new("TextLabel", TabButton)
+    TabIcon.Size = UDim2.new(0, 20, 1, 0)
+    TabIcon.Position = UDim2.new(1, -25, 0, 0)
+    TabIcon.BackgroundTransparency = 1
+    TabIcon.Text = i == 1 and "⚔️" or i == 2 and "🏃" or i == 3 and "👤" or i == 4 and "👁️" or "🛠️"
+    TabIcon.TextColor3 = Theme.Secondary
+    TabIcon.Font = Enum.Font.GothamBold
+    TabIcon.TextSize = 16
     
-    -- Visible özelliği sadece parent ayarlandıktan sonra
-    pcall(function()
-        _G.ClickTPIndicator.Visible = false
+    TabButtons[tabName] = TabButton
+    
+    -- MODÜL FRAME'İ
+    local TabFrame = Instance.new("ScrollingFrame", ModulesContainer)
+    TabFrame.Size = UDim2.new(1, 0, 1, 0)
+    TabFrame.BackgroundTransparency = 1
+    TabFrame.ScrollBarThickness = 4
+    TabFrame.ScrollBarImageColor3 = Theme.Primary
+    TabFrame.Visible = i == 1
+    TabFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    
+    local ModuleList = Instance.new("UIListLayout", TabFrame)
+    ModuleList.Padding = UDim.new(0, 10)
+    
+    TabFrames[tabName] = TabFrame
+    
+    TabButton.MouseButton1Click:Connect(function()
+        for _, frame in pairs(TabFrames) do
+            frame.Visible = false
+        end
+        TabFrame.Visible = true
+        
+        for _, btn in pairs(TabButtons) do
+            btn.BackgroundColor3 = Theme.Darker
+            btn.TextColor3 = Theme.Light
+        end
+        TabButton.BackgroundColor3 = Theme.Primary
+        TabButton.TextColor3 = Color3.new(1, 1, 1)
     end)
     
-    -- Işık efekti ekle
-    local pointLight = Instance.new("PointLight", _G.ClickTPIndicator)
-    pointLight.Brightness = 1
-    pointLight.Range = 5
-    pointLight.Color = Color3.fromRGB(0, 255, 0)
-    pointLight.Enabled = true
-end
-
--- BLINK VISUAL EFFECT FUNCTION
-local function CreateBlinkEffect(position)
-    if not BlinkEffectEnabled then return end
-    
-    -- Ana efekt partı
-    local effect = Instance.new("Part")
-    effect.Size = Vector3.new(3, 3, 3)
-    effect.Position = position
-    effect.Transparency = 0.3
-    effect.Color = Color3.fromRGB(0, 150, 255)
-    effect.Material = EnumMaterial.Neon
-    effect.Anchored = true
-    effect.CanCollide = false
-    effect.Parent = workspace
-    
-    -- Işık efekti
-    local pointLight = Instance.new("PointLight", effect)
-    pointLight.Brightness = 2
-    pointLight.Range = 10
-    pointLight.Color = Color3.fromRGB(0, 150, 255)
-    pointLight.Enabled = true
-    
-    -- Parlama efekti için particle
-    local particle = Instance.new("ParticleEmitter", effect)
-    particle.Rate = 100
-    particle.Lifetime = NumberRange.new(0.5, 1)
-    particle.Speed = NumberRange.new(5, 10)
-    particle.Size = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, 0.5),
-        NumberSequenceKeypoint.new(1, 0)
-    })
-    particle.Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, 0),
-        NumberSequenceKeypoint.new(1, 1)
-    })
-    particle.Color = ColorSequence.new(Color3.fromRGB(0, 150, 255))
-    particle.EmissionDirection = Enum.NormalId.Top
-    particle.VelocityInheritance = 0
-    
-    game:GetService("Debris"):AddItem(effect, 1)
-    
-    -- Kısa süreli yanıp sönme efekti
-    for i = 1, 3 do
-        effect.Transparency = i % 2 == 0 and 0.3 or 0.7
-        task.wait(0.1)
+    if i == 1 then
+        TabButton.BackgroundColor3 = Theme.Primary
+        TabButton.TextColor3 = Color3.new(1, 1, 1)
     end
 end
 
--- RENDER VISUALIZATION FUNCTION
-local function UpdateTPVisualization()
-    if not Character or not Root then return end
-    
-    local rayOrigin = Camera.CFrame.Position
-    local rayDirection = Camera.CFrame.LookVector * _G.ClickTPDistance
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-    raycastParams.FilterDescendantsInstances = {Character}
-    
-    local raycastResult = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
-    
-    if raycastResult then
-        SafeUpdateIndicatorPosition(raycastResult.Position + Vector3.new(0, 0.5, 0))
-        SafeSetIndicatorVisibility(true)
-    else
-        SafeUpdateIndicatorPosition(rayOrigin + (rayDirection * 0.95))
-        SafeSetIndicatorVisibility(true)
-    end
-end
+-- MODÜL KARTLARI OLUŞTURMA
+local SpeedDisplayLabel
 
--- CATEGORY SYSTEM
-local function CreateCategory(name, modules)
-    local Frame = Instance.new("Frame", MainContainer)
-    Frame.Size = UDim2.new(0, 180, 0, 40)
-    Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-    Frame.BorderSizePixel = 0
-    Frame.AutomaticSize = Enum.AutomaticSize.Y
+local function CreateModuleCard(parent, module)
+    local Card = Instance.new("Frame", parent)
+    Card.Size = UDim2.new(0, 200, 0, 80)
+    Card.BackgroundColor3 = Theme.Darker
+    Card.BorderSizePixel = 0
     
-    local Top = Instance.new("Frame", Frame)
-    Top.Size = UDim2.new(1, 0, 0, 3)
-    Top.BackgroundColor3 = AccentColor
-    Top.BorderSizePixel = 0
+    local CardCorner = Instance.new("UICorner", Card)
+    CardCorner.CornerRadius = UDim.new(0, 10)
     
-    local Title = Instance.new("TextLabel", Frame)
-    Title.Size = UDim2.new(1, 0, 0, 35)
-    Title.Text = "  "..name:upper()
-    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Title.Font = Enum.Font.Code
-    Title.TextSize = 14
+    local TopBar = Instance.new("Frame", Card)
+    TopBar.Size = UDim2.new(1, 0, 0, 30)
+    TopBar.BackgroundColor3 = Theme.Gray
+    TopBar.BorderSizePixel = 0
+    
+    local TopCorner = Instance.new("UICorner", TopBar)
+    TopCorner.CornerRadius = UDim.new(0, 10, 0, 0)
+    
+    local Icon = Instance.new("TextLabel", TopBar)
+    Icon.Size = UDim2.new(0, 30, 1, 0)
+    Icon.BackgroundTransparency = 1
+    Icon.Text = module.Icon or "⚙️"
+    Icon.TextColor3 = Theme.Secondary
+    Icon.Font = Enum.Font.GothamBold
+    Icon.TextSize = 16
+    
+    local Title = Instance.new("TextLabel", TopBar)
+    Title.Size = UDim2.new(1, -40, 1, 0)
+    Title.Position = UDim2.new(0, 35, 0, 0)
     Title.BackgroundTransparency = 1
+    Title.Text = module.Text
+    Title.TextColor3 = Theme.Light
+    Title.Font = Enum.Font.GothamMedium
+    Title.TextSize = 12
     Title.TextXAlignment = Enum.TextXAlignment.Left
     
-    local Content = Instance.new("Frame", Frame)
-    Content.Position = UDim2.new(0, 0, 0, 38)
-    Content.Size = UDim2.new(1, 0, 0, 0)
-    Content.AutomaticSize = Enum.AutomaticSize.Y
-    Content.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    Content.BorderSizePixel = 0
+    local ToggleButton = Instance.new("TextButton", Card)
+    ToggleButton.Size = UDim2.new(0, 60, 0, 25)
+    ToggleButton.Position = UDim2.new(0, 15, 1, -35)
+    ToggleButton.BackgroundColor3 = module.State and Theme.Success or Color3.fromRGB(100, 0, 0)
+    ToggleButton.Text = module.State and "ON" or "OFF"
+    ToggleButton.TextColor3 = Color3.new(1, 1, 1)
+    ToggleButton.Font = Enum.Font.GothamBold
+    ToggleButton.TextSize = 12
+    ToggleButton.BorderSizePixel = 0
     
-    local ContentList = Instance.new("UIListLayout", Content)
-    ContentList.Padding = UDim.new(0, 2)
-
-    for _, mod in pairs(modules) do
-        local btn = Instance.new("TextButton", Content)
-        btn.Size = UDim2.new(1, 0, 0, 32)
-        btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-        btn.Text = "  " .. mod.Text
-        btn.TextColor3 = mod.State and AccentColor or Color3.fromRGB(200, 200, 200)
-        btn.Font = Enum.Font.Code
-        btn.TextSize = 11
-        btn.TextXAlignment = Enum.TextXAlignment.Left
-        btn.BorderSizePixel = 0
+    local ToggleCorner = Instance.new("UICorner", ToggleButton)
+    ToggleCorner.CornerRadius = UDim.new(0, 6)
+    
+    local KeybindButton = Instance.new("TextButton", Card)
+    KeybindButton.Size = UDim2.new(0, 80, 0, 25)
+    KeybindButton.Position = UDim2.new(1, -95, 1, -35)
+    KeybindButton.BackgroundColor3 = Theme.Gray
+    KeybindButton.Text = "["..module.Key.Name.."]"
+    KeybindButton.TextColor3 = Theme.Light
+    KeybindButton.Font = Enum.Font.GothamMedium
+    KeybindButton.TextSize = 11
+    KeybindButton.BorderSizePixel = 0
+    
+    local KeybindCorner = Instance.new("UICorner", KeybindButton)
+    KeybindCorner.CornerRadius = UDim.new(0, 6)
+    
+    -- TOGGLE FUNCTIONALITY
+    ToggleButton.MouseButton1Click:Connect(function()
+        module.State = not module.State
+        ToggleButton.BackgroundColor3 = module.State and Theme.Success or Color3.fromRGB(100, 0, 0)
+        ToggleButton.Text = module.State and "ON" or "OFF"
         
-        if mod.Tag == "Bypass" then SpeedDisplayLabel = btn end
-
-        local bindBtn = Instance.new("TextButton", btn)
-        bindBtn.Size = UDim2.new(0, 50, 1, 0)
-        bindBtn.Position = UDim2.new(1, -55, 0, 0)
-        bindBtn.BackgroundTransparency = 1
-        bindBtn.Text = "["..mod.Key.Name.."]"
-        bindBtn.TextColor3 = Color3.fromRGB(100, 100, 100)
-        bindBtn.Font = Enum.Font.Code
-        bindBtn.TextSize = 10
-        bindBtn.TextXAlignment = Enum.TextXAlignment.Right
+        -- Özel efekt
+        local ripple = Instance.new("Frame", ToggleButton)
+        ripple.Size = UDim2.new(0, 0, 0, 0)
+        ripple.Position = UDim2.new(0.5, 0, 0.5, 0)
+        ripple.BackgroundColor3 = module.State and Theme.Success or Color3.fromRGB(200, 0, 0)
+        ripple.BackgroundTransparency = 0.5
+        ripple.BorderSizePixel = 0
         
-        bindBtn.MouseButton1Click:Connect(function()
-            bindBtn.Text = "[...]"
-            local conn
-            conn = UserInputService.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.Keyboard then
-                    mod.Key = (input.KeyCode == Enum.KeyCode.Escape) and Enum.KeyCode.Unknown or input.KeyCode
-                    bindBtn.Text = "["..mod.Key.Name.."]"
-                    conn:Disconnect()
-                end
-            end)
-        end)
-
-        -- SETTINGS FRAME
-        local sf = Instance.new("Frame", Content)
-        sf.Size = UDim2.new(1, 0, 0, 80) -- Blink için daha yüksek
-        sf.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-        sf.Visible = false
-        sf.BorderSizePixel = 0
+        local rippleCorner = Instance.new("UICorner", ripple)
+        rippleCorner.CornerRadius = UDim.new(1, 0)
         
-        -- COMBAT LOCK SETTINGS
-        if mod.Tag == "Aimbot" then
-            local teamBtn = Instance.new("TextButton", sf)
-            teamBtn.Size = UDim2.new(0.9, 0, 0.5, 0)
-            teamBtn.Position = UDim2.new(0.05, 0, 0.1, 0)
-            teamBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            teamBtn.Font = Enum.Font.Code
-            teamBtn.TextSize = 10
-            teamBtn.TextColor3 = Color3.new(1,1,1)
-            
-            local function updateTeamText()
-                teamBtn.Text = _G.TeamCheckActive and "Team Check: ON" or "Team Check: OFF"
-                teamBtn.BackgroundColor3 = _G.TeamCheckActive and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(100, 0, 0)
+        TweenService:Create(ripple, TweenInfo.new(0.3), {
+            Size = UDim2.new(2, 0, 2, 0),
+            Position = UDim2.new(-0.5, 0, -0.5, 0),
+            BackgroundTransparency = 1
+        }):Play()
+        
+        game:GetService("Debris"):AddItem(ripple, 0.3)
+    end)
+    
+    -- KEYBIND FUNCTIONALITY
+    KeybindButton.MouseButton1Click:Connect(function()
+        KeybindButton.Text = "[...]"
+        local conn
+        conn = UserInputService.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.Keyboard then
+                module.Key = (input.KeyCode == Enum.KeyCode.Escape) and module.Key or input.KeyCode
+                KeybindButton.Text = "["..module.Key.Name.."]"
+                conn:Disconnect()
             end
-            updateTeamText()
-            
-            teamBtn.MouseButton1Click:Connect(function()
-                _G.TeamCheckActive = not _G.TeamCheckActive
-                updateTeamText()
-            end)
-        end
-
-        -- SPEED SETTINGS
-        if mod.Tag == "Bypass" then
-            local speedText = Instance.new("TextLabel", sf)
-            speedText.Size = UDim2.new(0.9, 0, 0.3, 0)
-            speedText.Position = UDim2.new(0.05, 0, 0.1, 0)
-            speedText.BackgroundTransparency = 1
-            speedText.Text = "Hız: " .. _G.BoostPower
-            speedText.Font = Enum.Font.Code
-            speedText.TextSize = 10
-            speedText.TextColor3 = Color3.new(1,1,1)
-            speedText.TextXAlignment = Enum.TextXAlignment.Left
-            
-            local sl = Instance.new("TextButton", sf)
-            sl.Size = UDim2.new(0.8, 0, 0, 8)
-            sl.Position = UDim2.new(0.1, 0, 0.5, 0)
-            sl.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-            sl.Text = ""
-            
-            local fl = Instance.new("Frame", sl)
-            fl.BackgroundColor3 = AccentColor
-            fl.BorderSizePixel = 0
-            fl.Size = UDim2.new(math.clamp((_G.BoostPower-16)/184, 0, 1), 0, 1, 0)
-            
-            sl.MouseButton1Down:Connect(function()
-                local move
-                move = RunService.RenderStepped:Connect(function()
-                    if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-                        local p = math.clamp((UserInputService:GetMouseLocation().X - sl.AbsolutePosition.X) / sl.AbsoluteSize.X, 0, 1)
-                        _G.BoostPower = math.floor(16 + (p * 184))
-                        speedText.Text = "Hız: " .. _G.BoostPower
-                        fl.Size = UDim2.new(math.clamp((_G.BoostPower-16)/184, 0, 1), 0, 1, 0)
-                    else
-                        move:Disconnect()
-                    end
-                end)
-            end)
-        end
+        end)
+    end)
+    
+    -- SETTINGS BUTTON
+    if module.HasSettings then
+        local SettingsButton = Instance.new("TextButton", Card)
+        SettingsButton.Size = UDim2.new(0, 30, 0, 30)
+        SettingsButton.Position = UDim2.new(1, -35, 0, 5)
+        SettingsButton.BackgroundColor3 = Theme.Gray
+        SettingsButton.Text = "⚙️"
+        SettingsButton.TextColor3 = Theme.Light
+        SettingsButton.Font = Enum.Font.GothamBold
+        SettingsButton.TextSize = 14
+        SettingsButton.BorderSizePixel = 0
         
-        -- CLICK TP SETTINGS
-        if mod.Tag == "ClickTP" then
-            local distText = Instance.new("TextLabel", sf)
-            distText.Size = UDim2.new(0.9, 0, 0.3, 0)
-            distText.Position = UDim2.new(0.05, 0, 0.1, 0)
-            distText.BackgroundTransparency = 1
-            distText.Text = "Mesafe: " .. _G.ClickTPDistance
-            distText.Font = Enum.Font.Code
-            distText.TextSize = 10
-            distText.TextColor3 = Color3.new(1,1,1)
-            distText.TextXAlignment = Enum.TextXAlignment.Left
-            
-            local sl = Instance.new("TextButton", sf)
-            sl.Size = UDim2.new(0.8, 0, 0, 8)
-            sl.Position = UDim2.new(0.1, 0, 0.5, 0)
-            sl.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-            sl.Text = ""
-            
-            local fl = Instance.new("Frame", sl)
-            fl.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-            fl.BorderSizePixel = 0
-            fl.Size = UDim2.new(math.clamp(_G.ClickTPDistance/500, 0, 1), 0, 1, 0)
-            
-            sl.MouseButton1Down:Connect(function()
-                local move
-                move = RunService.RenderStepped:Connect(function()
-                    if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-                        local p = math.clamp((UserInputService:GetMouseLocation().X - sl.AbsolutePosition.X) / sl.AbsoluteSize.X, 0, 1)
-                        _G.ClickTPDistance = math.floor(10 + (p * 490))
-                        distText.Text = "Mesafe: " .. _G.ClickTPDistance
-                        fl.Size = UDim2.new(math.clamp(_G.ClickTPDistance/500, 0, 1), 0, 1, 0)
-                        
-                        if mod.State then
-                            UpdateTPVisualization()
-                        end
-                    else
-                        move:Disconnect()
-                    end
-                end)
-            end)
-        end
+        local SettingsCorner = Instance.new("UICorner", SettingsButton)
+        SettingsCorner.CornerRadius = UDim.new(1, 0)
         
-        -- BLINK SETTINGS
-        if mod.Tag == "Blink" then
-            -- Blink gücü ayarı
-            local powerText = Instance.new("TextLabel", sf)
-            powerText.Size = UDim2.new(0.9, 0, 0.2, 0)
-            powerText.Position = UDim2.new(0.05, 0, 0.05, 0)
-            powerText.BackgroundTransparency = 1
-            powerText.Text = "Blink Gücü: " .. BlinkPower
-            powerText.Font = Enum.Font.Code
-            powerText.TextSize = 10
-            powerText.TextColor3 = Color3.new(1,1,1)
-            powerText.TextXAlignment = Enum.TextXAlignment.Left
-            
-            local powerSlider = Instance.new("TextButton", sf)
-            powerSlider.Size = UDim2.new(0.8, 0, 0, 6)
-            powerSlider.Position = UDim2.new(0.1, 0, 0.3, 0)
-            powerSlider.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-            powerSlider.Text = ""
-            
-            local powerFill = Instance.new("Frame", powerSlider)
-            powerFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-            powerFill.BorderSizePixel = 0
-            powerFill.Size = UDim2.new(math.clamp(BlinkPower/200, 0, 1), 0, 1, 0)
-            
-            powerSlider.MouseButton1Down:Connect(function()
-                local move
-                move = RunService.RenderStepped:Connect(function()
-                    if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-                        local p = math.clamp((UserInputService:GetMouseLocation().X - powerSlider.AbsolutePosition.X) / powerSlider.AbsoluteSize.X, 0, 1)
-                        BlinkPower = math.floor(10 + (p * 190))
-                        powerText.Text = "Blink Gücü: " .. BlinkPower
-                        powerFill.Size = UDim2.new(math.clamp(BlinkPower/200, 0, 1), 0, 1, 0)
-                    else
-                        move:Disconnect()
-                    end
-                end)
-            end)
-            
-            -- Efekt toggle butonu
-            local effectBtn = Instance.new("TextButton", sf)
-            effectBtn.Size = UDim2.new(0.9, 0, 0.25, 0)
-            effectBtn.Position = UDim2.new(0.05, 0, 0.55, 0)
-            effectBtn.BackgroundColor3 = BlinkEffectEnabled and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(100, 0, 0)
-            effectBtn.Font = Enum.Font.Code
-            effectBtn.TextSize = 10
-            effectBtn.Text = BlinkEffectEnabled and "Efektler: AÇIK" or "Efektler: KAPALI"
-            effectBtn.TextColor3 = Color3.new(1,1,1)
-            
-            effectBtn.MouseButton1Click:Connect(function()
-                BlinkEffectEnabled = not BlinkEffectEnabled
-                effectBtn.BackgroundColor3 = BlinkEffectEnabled and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(100, 0, 0)
-                effectBtn.Text = BlinkEffectEnabled and "Efektler: AÇIK" or "Efektler: KAPALI"
-            end)
-        end
+        -- SETTINGS PANEL
+        local SettingsPanel = Instance.new("Frame", ScreenGui)
+        SettingsPanel.Size = UDim2.new(0, 300, 0, 200)
+        SettingsPanel.Position = UDim2.new(0.5, -150, 0.5, -100)
+        SettingsPanel.BackgroundColor3 = Theme.Dark
+        SettingsPanel.BorderSizePixel = 0
+        SettingsPanel.Visible = false
+        SettingsPanel.ZIndex = 100
+        
+        local PanelCorner = Instance.new("UICorner", SettingsPanel)
+        PanelCorner.CornerRadius = UDim.new(0, 12)
+        
+        local PanelShadow = Instance.new("ImageLabel", SettingsPanel)
+        PanelShadow.Name = "PanelShadow"
+        PanelShadow.BackgroundTransparency = 1
+        PanelShadow.Position = UDim2.new(0, -15, 0, -15)
+        PanelShadow.Size = UDim2.new(1, 30, 1, 30)
+        PanelShadow.Image = "rbxassetid://6015897843"
+        PanelShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+        PanelShadow.ImageTransparency = 0.5
+        PanelShadow.ScaleType = Enum.ScaleType.Slice
+        PanelShadow.SliceCenter = Rect.new(49, 49, 450, 450)
+        PanelShadow.ZIndex = 99
+        
+        SettingsButton.MouseButton1Click:Connect(function()
+            SettingsPanel.Visible = not SettingsPanel.Visible
+            UpdateSettingsPanel(SettingsPanel, module)
+        end)
+    end
+    
+    return Card
+end
 
-        btn.MouseButton1Click:Connect(function()
-            mod.State = not mod.State
-            btn.TextColor3 = mod.State and AccentColor or Color3.fromRGB(200, 200, 200)
-            
-            if mod.Tag == "ClickTP" then
-                if mod.State then
-                    -- Indicator'ı oluştur veya yenile
-                    CreateTPIndicator()
-                    UpdateTPVisualization()
+-- AYAR PANELİ GÜNCELLEME
+local function UpdateSettingsPanel(panel, module)
+    for _, child in pairs(panel:GetChildren()) do
+        if child:IsA("Frame") or child:IsA("TextLabel") then
+            child:Destroy()
+        end
+    end
+    
+    local Title = Instance.new("TextLabel", panel)
+    Title.Size = UDim2.new(1, -20, 0, 40)
+    Title.Position = UDim2.new(0, 10, 0, 10)
+    Title.BackgroundTransparency = 1
+    Title.Text = module.Text .. " Settings"
+    Title.TextColor3 = Theme.Light
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 16
+    
+    -- MODÜL AYARLARI
+    if module.Tag == "Aimbot" then
+        local teamBtn = Instance.new("TextButton", panel)
+        teamBtn.Size = UDim2.new(0.9, 0, 0, 30)
+        teamBtn.Position = UDim2.new(0.05, 0, 0.3, 0)
+        teamBtn.BackgroundColor3 = _G.TeamCheckActive and Theme.Success or Color3.fromRGB(100, 0, 0)
+        teamBtn.Font = Enum.Font.GothamMedium
+        teamBtn.TextSize = 12
+        teamBtn.TextColor3 = Color3.new(1,1,1)
+        teamBtn.Text = _G.TeamCheckActive and "Team Check: ON" or "Team Check: OFF"
+        
+        teamBtn.MouseButton1Click:Connect(function()
+            _G.TeamCheckActive = not _G.TeamCheckActive
+            teamBtn.BackgroundColor3 = _G.TeamCheckActive and Theme.Success or Color3.fromRGB(100, 0, 0)
+            teamBtn.Text = _G.TeamCheckActive and "Team Check: ON" or "Team Check: OFF"
+        end)
+        
+        -- FOV Ayarı
+        local fovText = Instance.new("TextLabel", panel)
+        fovText.Size = UDim2.new(0.9, 0, 0, 20)
+        fovText.Position = UDim2.new(0.05, 0, 0.5, 0)
+        fovText.BackgroundTransparency = 1
+        fovText.Text = "FOV: " .. _G.AimbotFOV
+        fovText.TextColor3 = Theme.Light
+        fovText.Font = Enum.Font.GothamMedium
+        fovText.TextSize = 12
+        
+        local fovSlider = Instance.new("Frame", panel)
+        fovSlider.Size = UDim2.new(0.8, 0, 0, 6)
+        fovSlider.Position = UDim2.new(0.1, 0, 0.7, 0)
+        fovSlider.BackgroundColor3 = Theme.Gray
+        
+        local fovFill = Instance.new("Frame", fovSlider)
+        fovFill.Size = UDim2.new(_G.AimbotFOV/360, 0, 1, 0)
+        fovFill.BackgroundColor3 = Theme.Primary
+        fovFill.BorderSizePixel = 0
+        
+        local sliderBtn = Instance.new("TextButton", fovSlider)
+        sliderBtn.Size = UDim2.new(1, 0, 2, 0)
+        sliderBtn.Position = UDim2.new(0, 0, -0.5, 0)
+        sliderBtn.BackgroundTransparency = 1
+        sliderBtn.Text = ""
+        
+        sliderBtn.MouseButton1Down:Connect(function()
+            local move
+            move = RunService.RenderStepped:Connect(function()
+                if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+                    local p = math.clamp((UserInputService:GetMouseLocation().X - fovSlider.AbsolutePosition.X) / fovSlider.AbsoluteSize.X, 0, 1)
+                    _G.AimbotFOV = math.floor(30 + (p * 330))
+                    fovText.Text = "FOV: " .. _G.AimbotFOV
+                    fovFill.Size = UDim2.new(_G.AimbotFOV/360, 0, 1, 0)
                 else
-                    SafeSetIndicatorVisibility(false)
+                    move:Disconnect()
                 end
-            end
+            end)
         end)
-        
-        btn.MouseButton2Click:Connect(function()
-            if mod.HasSettings then
-                sf.Visible = not sf.Visible
-                if mod.Tag == "ClickTP" and sf.Visible and mod.State then
-                    UpdateTPVisualization()
-                end
-            end
-        end)
+    end
+    
+    -- Diğer modül ayarları buraya eklenebilir...
+end
+
+-- TÜM MODÜLLERİ OLUŞTUR
+for categoryName, modules in pairs(_G.CurrentConfig) do
+    local tabFrame = TabFrames[categoryName]
+    if tabFrame then
+        for _, module in pairs(modules) do
+            CreateModuleCard(tabFrame, module)
+        end
     end
 end
 
--- Create categories
-CreateCategory("Combat", _G.CurrentConfig.Combat)
-CreateCategory("Movement", _G.CurrentConfig.Movement)
-CreateCategory("Player", _G.CurrentConfig.Player)
-CreateCategory("Render", _G.CurrentConfig.Render)
+-- KAPATMA BUTONU
+local CloseButton = Instance.new("TextButton", MainContainer)
+CloseButton.Size = UDim2.new(0, 30, 0, 30)
+CloseButton.Position = UDim2.new(1, -35, 0, 10)
+CloseButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+CloseButton.Text = "×"
+CloseButton.TextColor3 = Color3.new(1, 1, 1)
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.TextSize = 20
+CloseButton.BorderSizePixel = 0
 
--- MOUSE WHEEL CONTROL
-UserInputService.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseWheel then
-        _G.BoostPower = math.clamp(_G.BoostPower + (input.Position.Z > 0 and 5 or -5), 16, 200)
-        if SpeedDisplayLabel then
-            SpeedDisplayLabel.Text = "  Speed Bypass [".._G.BoostPower.."]"
-        end
-    end
+local CloseCorner = Instance.new("UICorner", CloseButton)
+CloseCorner.CornerRadius = UDim.new(1, 0)
+
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
 end)
 
--- CLICK TP FUNCTION
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    
+-- SÜRÜKLEME FONKSİYONU
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    MainContainer.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+Header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        for _, cat in pairs(_G.CurrentConfig) do
-            for _, m in pairs(cat) do
-                if m.Tag == "ClickTP" and m.State and Root then
-                    -- Indicator'ı kontrol et, yoksa oluştur
-                    if not _G.ClickTPIndicator or not _G.ClickTPIndicator.Parent then
-                        CreateTPIndicator()
-                    end
-                    
-                    local rayOrigin = Camera.CFrame.Position
-                    local rayDirection = Camera.CFrame.LookVector * _G.ClickTPDistance
-                    local raycastParams = RaycastParams.new()
-                    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-                    raycastParams.FilterDescendantsInstances = {Character}
-                    
-                    local raycastResult = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
-                    
-                    if raycastResult then
-                        local targetPos = raycastResult.Position + Vector3.new(0, 3, 0)
-                        if Humanoid and Humanoid.FloorMaterial ~= Enum.Material.Air then
-                            Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                        end
-                        Root.CFrame = CFrame.new(targetPos)
-                    else
-                        local targetPos = rayOrigin + (rayDirection * 0.95)
-                        if Humanoid and Humanoid.FloorMaterial ~= Enum.Material.Air then
-                            Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                        end
-                        Root.CFrame = CFrame.new(targetPos)
-                    end
-                    
-                    -- Teleport efekti
-                    local effect = Instance.new("Part")
-                    effect.Size = Vector3.new(3, 3, 3)
-                    effect.Position = Root.Position
-                    effect.Transparency = 0.5
-                    effect.Color = Color3.fromRGB(0, 255, 0)
-                    effect.Anchored = true
-                    effect.CanCollide = false
-                    effect.Parent = workspace
-                    
-                    game:GetService("Debris"):AddItem(effect, 0.5)
-                    break
-                end
+        dragging = true
+        dragStart = input.Position
+        startPos = MainContainer.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
             end
-        end
+        end)
     end
 end)
 
--- BLINK FUNCTION
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    
-    for _, cat in pairs(_G.CurrentConfig) do
-        for _, m in pairs(cat) do
-            if m.Tag == "Blink" and m.State and Root then
-                -- Blink tuşu Q olarak ayarlı
-                if input.KeyCode == Enum.KeyCode.Q then
-                    -- Kamera yönünde blink hareketi
-                    local direction = Camera.CFrame.LookVector
-                    
-                    -- Başlangıç pozisyonunda efekt
-                    CreateBlinkEffect(Root.Position)
-                    
-                    -- Hareket vektörü
-                    local moveVector = direction * BlinkPower
-                    
-                    -- Yeni pozisyonu hesapla
-                    local newPosition = Root.Position + moveVector
-                    
-                    -- Karakteri hareket ettir
-                    if Humanoid and Humanoid.FloorMaterial ~= Enum.Material.Air then
-                        Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                    end
-                    
-                    Root.CFrame = CFrame.new(newPosition)
-                    
-                    -- Bitiş pozisyonunda efekt
-                    CreateBlinkEffect(newPosition)
-                    
-                    -- Hareket etkisi için kısa süreli hız
-                    Root.Velocity = moveVector * 0.5 + Vector3.new(0, 10, 0)
-                    
-                    break
-                end
-            end
-        end
+Header.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
     end
 end)
 
--- MAIN ENGINE
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
+
+-- TOGGLE GUI KOMUTU
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.RightShift then
+        MainContainer.Visible = not MainContainer.Visible
+    end
+end)
+
+-- RAINBOW GUI EFFECT
+local rainbowConnections = {}
+local function ToggleRainbowGUI(state)
+    if state then
+        local hue = 0
+        local conn = RunService.RenderStepped:Connect(function()
+            hue = (hue + 0.01) % 1
+            local color = Color3.fromHSV(hue, 0.8, 1)
+            
+            -- Header rengini değiştir
+            Header.BackgroundColor3 = color
+            
+            -- Aktif tab rengini değiştir
+            for _, btn in pairs(TabButtons) do
+                if btn.BackgroundColor3 == Theme.Primary then
+                    btn.BackgroundColor3 = color
+                end
+            end
+            
+            -- Toggle butonlarını güncelle
+            for _, module in pairs(_G.CurrentConfig.Visuals) do
+                if module.Tag == "RainbowGUI" and module.State then
+                    Theme.Primary = color
+                    Theme.Secondary = Color3.fromHSV((hue + 0.5) % 1, 0.8, 1)
+                end
+            end
+        end)
+        table.insert(rainbowConnections, conn)
+    else
+        for _, conn in pairs(rainbowConnections) do
+            conn:Disconnect()
+        end
+        rainbowConnections = {}
+        Header.BackgroundColor3 = Theme.Darker
+    end
+end
+
+-- GAME LOOP
 RunService.Heartbeat:Connect(function()
     if not Root or not Humanoid then return end
     
-    local s = {}
+    -- Modül durumlarını kontrol et
+    local states = {}
     for _, cat in pairs(_G.CurrentConfig) do
         for _, m in pairs(cat) do
-            s[m.Tag] = m.State
+            states[m.Tag] = m.State
         end
     end
     
-    if SpeedDisplayLabel then
-        SpeedDisplayLabel.Text = "  Speed Bypass [".._G.BoostPower.."]"
+    -- Rainbow GUI kontrolü
+    if states.RainbowGUI ~= nil then
+        ToggleRainbowGUI(states.RainbowGUI)
     end
-
+    
     -- GOD MODE
-    if s.GodMode then
+    if states.GodMode then
         Humanoid.Health = 100
         Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
     else
         Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
     end
 
-    -- MOVEMENT
-    if s.Bypass and Humanoid.MoveDirection.Magnitude > 0 then
+    -- HIZ BYPASS
+    if states.Bypass and Humanoid.MoveDirection.Magnitude > 0 then
         Root.Velocity = Vector3.new(
             Humanoid.MoveDirection.X * _G.BoostPower,
             Root.Velocity.Y,
@@ -593,7 +616,8 @@ RunService.Heartbeat:Connect(function()
         )
     end
     
-    if s.NoClip then
+    -- NO-CLIP
+    if states.NoClip then
         for _, v in pairs(Character:GetDescendants()) do
             if v:IsA("BasePart") then
                 v.CanCollide = false
@@ -601,84 +625,74 @@ RunService.Heartbeat:Connect(function()
         end
     end
     
-    if s.AntiAim then
+    -- ANTI-AIM
+    if states.AntiAim then
         Root.CFrame = Root.CFrame * CFrame.Angles(0, math.rad(45), 0)
     end
     
-    if s.AntiKB then
+    -- ANTI-KB
+    if states.AntiKB then
         Root.Velocity = Vector3.new(0, Root.Velocity.Y, 0)
     end
-
-    -- Click TP görselleştirmesi (GÜVENLİ VERSİYON)
-    if s.ClickTP then
-        -- Indicator'ı kontrol et, yoksa oluştur
-        if not _G.ClickTPIndicator or not _G.ClickTPIndicator.Parent then
-            CreateTPIndicator()
-        end
+    
+    -- FLY (Yeni özellik)
+    if states.Fly then
+        local direction = Vector3.new()
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then direction = direction + Camera.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then direction = direction - Camera.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then direction = direction + Camera.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then direction = direction - Camera.CFrame.RightVector end
         
-        UpdateTPVisualization()
-    else
-        SafeSetIndicatorVisibility(false)
-    end
-
-    -- COMBAT ENGINE
-    if s.Aimbot or s.SuperKB then
-        local target = nil
-        local dist = 250
-        
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= Player and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
-                local canTarget = true
-                if _G.TeamCheckActive and p.Team == Player.Team then
-                    canTarget = false
-                end
-                
-                if canTarget then
-                    local hrp = p.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        local d = (hrp.Position - Root.Position).Magnitude
-                        if d < dist then
-                            target = p.Character
-                            dist = d
-                        end
-                    end
-                end
-            end
-        end
-        
-        if target and target:FindFirstChild("HumanoidRootPart") then
-            if s.Aimbot then
-                Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, target.HumanoidRootPart.Position + Vector3.new(0, 2, 0))
-                Root.CFrame = CFrame.lookAt(
-                    Root.Position,
-                    Vector3.new(target.HumanoidRootPart.Position.X, Root.Position.Y, target.HumanoidRootPart.Position.Z)
-                )
-            end
-            
-            if s.SuperKB and (target.HumanoidRootPart.Position - Root.Position).Magnitude < 15 then
-                target.HumanoidRootPart.Velocity = Root.CFrame.LookVector * 500 + Vector3.new(0, 50, 0)
-            end
+        if direction.Magnitude > 0 then
+            direction = direction.Unit * 50
+            Root.Velocity = Vector3.new(direction.X, 0, direction.Z)
+            Humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
         end
     end
-
+    
     -- ESP
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= Player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-            if s.ESP then
+    if states.ESP then
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= Player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
                 local hl = p.Character:FindFirstChild("ACR_ESP") or Instance.new("Highlight", p.Character)
                 hl.Name = "ACR_ESP"
-                hl.FillColor = (p.Team ~= Player.Team) and AccentColor or Color3.new(0,1,0)
-                hl.FillTransparency = 0.5
-                hl.OutlineColor = Color3.new(1,1,1)
+                
+                -- ESP renk moduna göre renk belirle
+                if _G.ESPColorMode == "Team" then
+                    hl.FillColor = (p.Team ~= Player.Team) and Theme.Primary or Theme.Success
+                elseif _G.ESPColorMode == "Health" then
+                    local health = p.Character.Humanoid.Health / p.Character.Humanoid.MaxHealth
+                    hl.FillColor = Color3.new(1 - health, health, 0)
+                else -- Distance
+                    local dist = (p.Character.HumanoidRootPart.Position - Root.Position).Magnitude
+                    local intensity = math.clamp(1 - (dist / 500), 0, 1)
+                    hl.FillColor = Color3.new(1, intensity, 0)
+                end
+                
+                hl.FillTransparency = 0.3
+                hl.OutlineColor = Color3.new(1, 1, 1)
                 hl.OutlineTransparency = 0
-            elseif p.Character:FindFirstChild("ACR_ESP") then
+            end
+        end
+    else
+        for _, p in pairs(Players:GetPlayers()) do
+            if p.Character and p.Character:FindFirstChild("ACR_ESP") then
                 p.Character.ACR_ESP:Destroy()
             end
         end
     end
+    
+    -- FULLBRIGHT
+    if states.Fullbright then
+        game.Lighting.Brightness = 2
+        game.Lighting.ClockTime = 14
+        game.Lighting.FogEnd = 100000
+    else
+        game.Lighting.Brightness = 1
+    end
 end)
 
--- INF JUMP
+-- INFINITE JUMP
 UserInputService.JumpRequest:Connect(function()
     for _, m in pairs(_G.CurrentConfig.Movement) do
         if m.Tag == "InfJump" and m.State and Root then
@@ -692,33 +706,21 @@ end)
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     
-    if input.KeyCode == Enum.KeyCode.P then
-        MainContainer.Visible = not MainContainer.Visible
-        return
-    end
-    
     for _, cat in pairs(_G.CurrentConfig) do
         for _, mod in pairs(cat) do
             if mod.Key ~= Enum.KeyCode.Unknown and input.KeyCode == mod.Key then
                 mod.State = not mod.State
                 
-                -- Update button color
-                for _, frame in pairs(MainContainer:GetChildren()) do
-                    if frame:IsA("Frame") then
-                        for _, content in pairs(frame:GetChildren()) do
-                            if content:IsA("Frame") and content.Name == "" then
-                                for _, btn in pairs(content:GetChildren()) do
-                                    if btn:IsA("TextButton") and btn.Text:find(mod.Text, 1, true) then
-                                        btn.TextColor3 = mod.State and AccentColor or Color3.fromRGB(200, 200, 200)
-                                        
-                                        if mod.Tag == "ClickTP" then
-                                            if mod.State then
-                                                CreateTPIndicator()
-                                                UpdateTPVisualization()
-                                            else
-                                                SafeSetIndicatorVisibility(false)
-                                            end
-                                        end
+                -- GUI'de güncelleme
+                for _, tabFrame in pairs(TabFrames) do
+                    for _, card in pairs(tabFrame:GetChildren()) do
+                        if card:IsA("Frame") then
+                            for _, child in pairs(card:GetChildren()) do
+                                if child:IsA("TextButton") and child.Text:find("ON") or child.Text:find("OFF") then
+                                    if card:FindFirstChildOfClass("TextLabel") and 
+                                       card:FindFirstChildOfClass("TextLabel").Text:find(mod.Text, 1, true) then
+                                        child.BackgroundColor3 = mod.State and Theme.Success or Color3.fromRGB(100, 0, 0)
+                                        child.Text = mod.State and "ON" or "OFF"
                                         break
                                     end
                                 end
@@ -732,14 +734,11 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- İlk çalıştırmada indicator'ı oluştur
-task.wait(1)
-if not _G.ClickTPIndicator or not _G.ClickTPIndicator.Parent then
-    CreateTPIndicator()
-end
-
-print("ACR HUB V39 - HATALAR GİDERİLDİ")
-print("• Click TP indicator güvenli hale getirildi")
-print("• Visible hataları düzeltildi")
-print("• Blink modülü eklendi (Q tuşu)")
-print("• Tüm modüller çalışır durumda")
+print("🎮 ACR HUB V39 - MODERN EDITION YÜKLENDİ!")
+print("• Modern kırmızı-mavi tema")
+print("• " .. #Tabs .. " kategori, " .. 
+      (#_G.CurrentConfig.Combat + #_G.CurrentConfig.Movement + 
+       #_G.CurrentConfig.Player + #_G.CurrentConfig.Visuals + 
+       #_G.CurrentConfig.Utility) .. " modül")
+print("• GUI'yi açmak/kapatmak için: RightShift")
+print("• Discord: ACR Development")
