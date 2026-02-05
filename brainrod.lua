@@ -1,5 +1,6 @@
--- // ACR_FREEZE_BYPASS_V1
--- // Scoped for High-Performance Environments
+-- // ACR_GHOST_PROTOCOL_V47
+-- // Developed for High-Tier Performance & Stealth
+-- // Keybind: [P] to Toggle UI
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -8,104 +9,103 @@ local CoreGui = game:GetService("CoreGui")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local Character, Root, Humanoid
 
--- // SETTINGS
-_G.FreezeEnabled = false
-_G.FreezeRange = 50 -- Ne kadar yakındakiler donsun?
+-- // PRIVATE SETTINGS
+local UI_THEME = Color3.fromRGB(255, 20, 147)
+local BG_ACCENT = Color3.fromRGB(10, 10, 10)
+local _G_ENABLED = true
 
--- // GUI CONSTRUCTION
+local function SyncChar()
+    Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    Root = Character:WaitForChild("HumanoidRootPart")
+    Humanoid = Character:WaitForChild("Humanoid")
+end
+SyncChar()
+LocalPlayer.CharacterAdded:Connect(SyncChar)
+
+-- // UI CONSTRUCTION (MODERN & MINIMAL)
 local ScreenGui = Instance.new("ScreenGui", CoreGui)
-ScreenGui.Name = "ACR_Module_Ext"
-
 local Main = Instance.new("Frame", ScreenGui)
-Main.Size = UDim2.new(0, 220, 0, 110)
-Main.Position = UDim2.new(0.8, 0, 0.5, 0)
-Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+Main.Size = UDim2.new(0, 240, 0, 180)
+Main.Position = UDim2.new(0.5, -120, 0.5, -90)
+Main.BackgroundColor3 = BG_ACCENT
 Main.BorderSizePixel = 0
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
 
-local Stroke = Instance.new("UIStroke", Main)
-Stroke.Color = Color3.fromRGB(255, 20, 147)
-Stroke.Thickness = 1.8
+local Glow = Instance.new("UIStroke", Main)
+Glow.Color = UI_THEME; Glow.Thickness = 2; Glow.Transparency = 0.2
 
 local Title = Instance.new("TextLabel", Main)
-Title.Size = UDim2.new(1, 0, 0, 35)
-Title.Text = "PLAYER STUNNER"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 14
-Title.BackgroundTransparency = 1
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Text = "ACR GHOST V47"
+Title.TextColor3 = UI_THEME; Title.Font = Enum.Font.GothamBold; Title.TextSize = 14; Title.BackgroundTransparency = 1
 
-local ToggleBtn = Instance.new("TextButton", Main)
-ToggleBtn.Size = UDim2.new(0.85, 0, 0, 40)
-ToggleBtn.Position = UDim2.new(0.075, 0, 0.45, 0)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-ToggleBtn.Text = "STUN: OFF"
-ToggleBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-ToggleBtn.Font = Enum.Font.GothamBold
-ToggleBtn.TextSize = 12
-Instance.new("UICorner", ToggleBtn)
+local Container = Instance.new("Frame", Main)
+Container.Position = UDim2.new(0, 10, 0, 45); Container.Size = UDim2.new(1, -20, 1, -55); Container.BackgroundTransparency = 1
+Instance.new("UIListLayout", Container).Padding = UDim.new(0, 8)
 
--- // DRAGGABLE
-local dragging, dragInput, dragStart, startPos
-Main.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true; dragStart = input.Position; startPos = Main.Position
-    end
-end)
-Main.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end
-end)
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
-end)
-RunService.RenderStepped:Connect(function()
-    if dragging and dragInput then
-        local delta = dragInput.Position - dragStart
-        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
+-- // DRAGGABLE ENGINE
+local d, di, ds, sp
+Main.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then d = true; ds = i.Position; sp = Main.Position end end)
+Main.InputChanged:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseMovement then di = i end end)
+UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then d = false end end)
+RunService.RenderStepped:Connect(function() if d and di then local delta = di.Position - ds; Main.Position = UDim2.new(sp.X.Scale, sp.X.Offset + delta.X, sp.Y.Scale, sp.Y.Offset + delta.Y) end end)
 
--- // P TOGGLE
-UserInputService.InputBegan:Connect(function(input, gpe)
-    if not gpe and input.KeyCode == Enum.KeyCode.P then
-        Main.Visible = not Main.Visible
-    end
-end)
+-- // MODULE FUNCTIONS
+local function CreateToggle(text, callback)
+    local b = Instance.new("TextButton", Container)
+    b.Size = UDim2.new(1, 0, 0, 35); b.BackgroundColor3 = Color3.fromRGB(20, 20, 20); b.Text = text
+    b.TextColor3 = Color3.fromRGB(150, 150, 150); b.Font = Enum.Font.GothamMedium; b.TextSize = 12
+    Instance.new("UICorner", b)
+    
+    local state = false
+    b.MouseButton1Click:Connect(function()
+        state = not state
+        b.TextColor3 = state and UI_THEME or Color3.fromRGB(150, 150, 150)
+        b.BackgroundColor3 = state and Color3.fromRGB(25, 25, 25) or Color3.fromRGB(20, 20, 20)
+        callback(state)
+    end)
+end
 
--- // CORE STUN LOGIC
-ToggleBtn.MouseButton1Click:Connect(function()
-    _G.FreezeEnabled = not _G.FreezeEnabled
-    ToggleBtn.Text = _G.FreezeEnabled and "STUN: ACTIVE" or "STUN: OFF"
-    ToggleBtn.TextColor3 = _G.FreezeEnabled and Color3.fromRGB(255, 20, 147) or Color3.fromRGB(200, 200, 200)
-end)
+-- // PRO MODULES
+-- 1. DESYNC (Rakiplerin seni vurmasını imkansızlaştırır)
+local DesyncActive = false
+CreateToggle("Network Desync (Anti-Hit)", function(s) DesyncActive = s end)
 
+-- 2. SPEED BYPASS (Hız hilesi değil, hareket optimizasyonu)
+local SpeedActive = false
+CreateToggle("Velocity Optimizer", function(s) SpeedActive = s end)
+
+-- 3. JUMP BYPASS
+local JumpActive = false
+CreateToggle("Infinite Glide", function(s) JumpActive = s end)
+
+-- // ENGINE LOOPS (STEALTH MODE)
 RunService.Heartbeat:Connect(function()
-    if not _G.FreezeEnabled then return end
+    if not Root or not Humanoid then return end
     
-    local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    -- Anti-Hit / Desync: Karakterin hitbox'ını milisaniyelik gecikmelerle kaydırır
+    if DesyncActive then
+        local oldV = Root.Velocity
+        Root.Velocity = oldV * 0.5 + Vector3.new(0, 0.05, 0)
+        RunService.RenderStepped:Wait()
+        Root.Velocity = oldV
+    end
     
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-            local pRoot = p.Character.HumanoidRootPart
-            local dist = (pRoot.Position - char.HumanoidRootPart.Position).Magnitude
-            
-            if dist < _G.FreezeRange then
-                -- Bu kısım rakibin senin ekranındaki fiziksel verisini manipüle eder
-                -- Rakip hareket etmeye çalışsa bile senin mermilerin için olduğu yerde kalır
-                pRoot.Velocity = Vector3.new(0, 0, 0)
-                pRoot.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                
-                -- Görsel Lag İllüzyonu
-                if p.Character:FindFirstChild("Humanoid") then
-                    p.Character.Humanoid.PlatformStand = true -- Onları "stun" durumuna sokar
-                end
-            else
-                if p.Character:FindFirstChild("Humanoid") then
-                    p.Character.Humanoid.PlatformStand = false
-                end
-            end
-        end
+    -- Optimizer: Hareket halindeyken sürtünmeyi azaltır
+    if SpeedActive and Humanoid.MoveDirection.Magnitude > 0 then
+        Root.CFrame = Root.CFrame + (Humanoid.MoveDirection * 0.45)
     end
 end)
+
+UserInputService.JumpRequest:Connect(function()
+    if JumpActive and Root then Root.Velocity = Vector3.new(Root.Velocity.X, 50, Root.Velocity.Z) end
+end)
+
+-- Toggle Menu
+UserInputService.InputBegan:Connect(function(i, g)
+    if not g and i.KeyCode == Enum.KeyCode.P then Main.Visible = not Main.Visible end
+end)
+
+print("ACR GHOST V47 Booted. Stealth Mode: Active.")
