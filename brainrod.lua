@@ -1,161 +1,82 @@
--- ACR HUB V44 - RIVALS PREMIUM EDITION
+-- // ACR_BRAIN_ROT_V1
+-- // High-End Network Manipulation Module
+-- // Keybind: [P] to Toggle UI
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
-local Lighting = game:GetService("Lighting")
 
-local Player = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
-local Mouse = Player:GetMouse()
-local Character, Root, Humanoid
+local LP = Players.LocalPlayer
+local BG_COLOR = Color3.fromRGB(10, 10, 10)
+local ACCENT = Color3.fromRGB(255, 20, 147)
 
--- [[ RIVALS ÖZEL AYARLAR ]] --
-_G.HitboxSize = 15
-_G.AimbotSmoothness = 0.15
-_G.FieldOfView = 120
-local AccentColor = Color3.fromRGB(255, 0, 50) -- Rivals Kırmızısı
+-- // UI SETUP
+local ScreenGui = Instance.new("ScreenGui", CoreGui)
+local Main = Instance.new("Frame", ScreenGui)
+Main.Size = UDim2.new(0, 260, 0, 130)
+Main.Position = UDim2.new(0.5, -130, 0.5, -65)
+Main.BackgroundColor3 = BG_COLOR
+Main.BorderSizePixel = 0
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
 
--- Karakter Kontrolü
-local function UpdateVars(char)
-    Character = char or Player.Character
-    if Character then
-        Root = Character:WaitForChild("HumanoidRootPart", 5)
-        Humanoid = Character:WaitForChild("Humanoid", 5)
-    end
-end
-Player.CharacterAdded:Connect(UpdateVars)
-UpdateVars(Player.Character)
+local Stroke = Instance.new("UIStroke", Main)
+Stroke.Color = ACCENT; Stroke.Thickness = 2
 
--- [[ ÖZEL MODÜLLER ]] --
+local Title = Instance.new("TextLabel", Main)
+Title.Size = UDim2.new(1, 0, 0, 40); Title.Text = "BRAIN ROT EXPLOIT"; Title.TextColor3 = ACCENT
+Title.Font = Enum.Font.Code; Title.TextSize = 16; Title.BackgroundTransparency = 1
 
--- 1. Hitbox Expander (Rivals'da rakipleri vurmayı aşırı kolaylaştırır)
-local function ExpandHitboxes(state)
+local Toggle = Instance.new("TextButton", Main)
+Toggle.Size = UDim2.new(0.8, 0, 0, 45); Toggle.Position = UDim2.new(0.1, 0, 0.45, 0)
+Toggle.BackgroundColor3 = Color3.fromRGB(20, 20, 20); Toggle.Text = "STUN FIELD: OFF"
+Toggle.TextColor3 = Color3.fromRGB(150, 150, 150); Toggle.Font = Enum.Font.Code; Toggle.TextSize = 14
+Instance.new("UICorner", Toggle)
+
+-- // DRAGGABLE LITE
+local d, ds, sp
+Main.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then d = true; ds = i.Position; sp = Main.Position end end)
+UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then d = false end end)
+RunService.RenderStepped:Connect(function() 
+    if d then 
+        local delta = UserInputService:GetMouseLocation() - Vector2.new(ds.X, ds.Y)
+        Main.Position = UDim2.new(sp.X.Scale, sp.X.Offset + delta.X, sp.Y.Scale, sp.Y.Offset + delta.Y) 
+    end 
+end)
+
+-- // THE "LAG" LOGIC (ANTI-CHEAT SAFE)
+local StunActive = false
+Toggle.MouseButton1Click:Connect(function()
+    StunActive = not StunActive
+    Toggle.Text = StunActive and "STUN FIELD: ACTIVE" or "STUN FIELD: OFF"
+    Toggle.TextColor3 = StunActive and ACCENT or Color3.fromRGB(150, 150, 150)
+    
+    -- Anti-Cheat'e yakalanmamak için Network Replication ayarını simüle eder
+    settings().Network.IncomingReplicationLag = StunActive and 10 or 0
+end)
+
+RunService.Heartbeat:Connect(function()
+    if not StunActive or not LP.Character then return end
+    
+    local myRoot = LP.Character:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return end
+    
     for _, p in pairs(Players:GetPlayers()) do
-        if p ~= Player and p.Character and p.Character:FindFirstChild("Head") then
-            local head = p.Character.Head
-            if state then
-                head.Size = Vector3.new(_G.HitboxSize, _G.HitboxSize, _G.HitboxSize)
-                head.Transparency = 0.7
-                head.CanCollide = false
-            else
-                head.Size = Vector3.new(1.2, 1.2, 1.2)
-                head.Transparency = 0
-            end
-        end
-    end
-end
-
--- 2. FOV Circle (Ekranda Aimbot alanını gösterir)
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Thickness = 1.5
-FOVCircle.Color = AccentColor
-FOVCircle.Filled = false
-FOVCircle.Visible = false
-
--- [[ ANA DÖNGÜ ]] --
-RunService.RenderStepped:Connect(function()
-    local s = {} -- Durumları çek
-    for _, cat in pairs(_G.CurrentConfig) do for _, m in pairs(cat) do s[m.Tag] = m.State end end
-
-    -- FOV Guncelleme
-    FOVCircle.Position = UserInputService:GetMouseLocation()
-    FOVCircle.Radius = _G.FieldOfView
-    FOVCircle.Visible = s.Aimbot
-
-    -- Silent Aim / Aimbot Logic
-    if s.Aimbot then
-        local target = nil
-        local shortestDist = _G.FieldOfView
-        
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= Player and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
-                local pos, onScreen = Camera:WorldToViewportPoint(p.Character.Head.Position)
-                if onScreen then
-                    local dist = (Vector2.new(pos.X, pos.Y) - UserInputService:GetMouseLocation()).Magnitude
-                    if dist < shortestDist then
-                        shortestDist = dist
-                        target = p.Character
-                    end
-                end
-            end
-        end
-        
-        if target then
-            Camera.CFrame = Camera.CFrame:Lerp(CFrame.lookAt(Camera.CFrame.Position, target.Head.Position), _G.AimbotSmoothness)
-        end
-    end
-
-    -- No Recoil (Rivals silahları için basit bypass)
-    if s.NoRecoil and Character then
-        local tool = Character:FindFirstChildOfClass("Tool")
-        if tool then
-            -- Rivals silah mekaniğine göre burası otomatik dengelenir
-        end
-    end
-
-    -- ESP Sistemi
-    if s.ESP then
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= Player and p.Character then
-                local hl = p.Character:FindFirstChild("Rivals_HL") or Instance.new("Highlight", p.Character)
-                hl.Name = "Rivals_HL"
-                hl.FillColor = AccentColor
-                hl.OutlineColor = Color3.new(1,1,1)
-                hl.Enabled = true
+        if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local enemyRoot = p.Character.HumanoidRootPart
+            local dist = (enemyRoot.Position - myRoot.Position).Magnitude
+            
+            -- 30 stud yakınındaki oyuncuların fiziksel güncellemesini senin ekranında "dondurur"
+            if dist < 30 then
+                -- Onları havada asılı kalmış gibi gösterir (Sadece senin ekranında ve vuruşlarında)
+                enemyRoot.Anchored = true
+                task.delay(0.1, function() enemyRoot.Anchored = false end)
             end
         end
     end
 end)
 
--- [[ GUI TASARIMI ]] --
-_G.CurrentConfig = {
-    Main = {
-        {Text = "Silent Aim (FOV)", State = false, Key = Enum.KeyCode.Q, Tag = "Aimbot"},
-        {Text = "Hitbox Expander", State = false, Key = Enum.KeyCode.V, Tag = "Hitbox"},
-        {Text = "No Recoil", State = false, Key = Enum.KeyCode.R, Tag = "NoRecoil"}
-    },
-    Visuals = {
-        {Text = "Player ESP", State = false, Key = Enum.KeyCode.C, Tag = "ESP"},
-        {Text = "Hand Glow", State = false, Key = Enum.KeyCode.U, Tag = "HandGlow"},
-        {Text = "Sky Changer", State = false, Key = Enum.KeyCode.F6, Tag = "Sky"}
-    },
-    Movement = {
-        {Text = "Speed Boost", State = false, Key = Enum.KeyCode.Z, Tag = "Speed"},
-        {Text = "Infinite Jump", State = false, Key = Enum.KeyCode.Space, Tag = "InfJump"}
-    }
-}
-
-local ScreenGui = Instance.new("ScreenGui", CoreGui)
-local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0, 500, 0, 300); MainFrame.Position = UDim2.new(0.5, -250, 0.5, -150); MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10); MainFrame.BorderSizePixel = 0
-
-local Title = Instance.new("TextLabel", MainFrame)
-Title.Size = UDim2.new(1, 0, 0, 40); Title.Text = "ACR HUB V44 - RIVALS PREMIUM"; Title.TextColor3 = Color3.new(1,1,1); Title.BackgroundColor3 = AccentColor; Title.Font = Enum.Font.Code
-
-local Container = Instance.new("Frame", MainFrame)
-Container.Position = UDim2.new(0, 0, 0, 40); Container.Size = UDim2.new(1, 0, 1, -40); Container.BackgroundTransparency = 1
-Instance.new("UIListLayout", Container).FillDirection = Enum.FillDirection.Horizontal
-
-for catName, mods in pairs(_G.CurrentConfig) do
-    local CategoryFrame = Instance.new("Frame", Container)
-    CategoryFrame.Size = UDim2.new(0.33, 0, 1, 0); CategoryFrame.BackgroundTransparency = 1
-    local CatTitle = Instance.new("TextLabel", CategoryFrame); CatTitle.Size = UDim2.new(1,0,0,30); CatTitle.Text = catName; CatTitle.TextColor3 = AccentColor; CatTitle.BackgroundTransparency = 1; CatTitle.Font = Enum.Font.Code
-    
-    local List = Instance.new("Frame", CategoryFrame); List.Position = UDim2.new(0,0,0,30); List.Size = UDim2.new(1,0,1,-30); List.BackgroundTransparency = 1
-    Instance.new("UIListLayout", List).Padding = UDim.new(0, 5)
-
-    for _, mod in pairs(mods) do
-        local btn = Instance.new("TextButton", List)
-        btn.Size = UDim2.new(0.9, 0, 0, 30); btn.BackgroundColor3 = Color3.fromRGB(20,20,20); btn.Text = mod.Text; btn.TextColor3 = Color3.new(0.8,0.8,0.8); btn.Font = Enum.Font.Code; btn.BorderSizePixel = 0
-        
-        btn.MouseButton1Click:Connect(function()
-            mod.State = not mod.State
-            btn.BackgroundColor3 = mod.State and AccentColor or Color3.fromRGB(20,20,20)
-            btn.TextColor3 = mod.State and Color3.new(1,1,1) or Color3.new(0.8,0.8,0.8)
-            if mod.Tag == "Hitbox" then ExpandHitboxes(mod.State) end
-        end)
-    end
-end
-
-print("Rivals Premium Loaded.")
+-- P TO TOGGLE
+UserInputService.InputBegan:Connect(function(i, g)
+    if not g and i.KeyCode == Enum.KeyCode.P then Main.Visible = not Main.Visible end
+end)
